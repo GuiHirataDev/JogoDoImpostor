@@ -3,15 +3,112 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark base */
+:root {
+  --bg: #07070a;
+  --surface: #0f1115;
+  --muted: #9aa0a6;
+  --accent: #00b894; /* verde claro para o botão */
+  --card: #0b0c0f;
+}
+
 html, body, #__next {
   height: 100%;
 }
 
 body {
-  @apply bg-gray-50 text-gray-900 antialiased;
+  background: radial-gradient(1000px 400px at 10% 0%, rgba(255,255,255,0.01), transparent),
+              linear-gradient(180deg, var(--bg) 0%, #050507 100%);
+  color: #e6eef3;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
 
-/* alguns utilitários rápidos */
-.btn {
-  @apply px-4 py-2 rounded-lg;
+/* Card surface style */
+.card-surface {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.04);
+  backdrop-filter: blur(6px);
 }
+
+/* Primary big button fixed at bottom */
+.btn-primary-fixed {
+  background: linear-gradient(90deg, #00c06b, #00a05a);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+/* Small helpers */
+.kv-label { color: var(--muted); font-size: 0.9rem; }
+.kv-value { font-weight: 600; }
+
+/* === regras extras para /game (player reveal UX) === */
+
+/* A página já tem background; fazemos contraste com o cartão central */
+body {
+  /* Cor de fundo roxa escura para a página do jogo, para cobrir o conteúdo do card */
+  background: linear-gradient(180deg, #0a0512 0%, #1b0737 100%);
+}
+
+/* Player image card styling: já aplicadas inline, mas deixa aqui auxílio */
+.player-image {
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* cartão branco de conteúdo (revelado) */
+.reveal-card {
+  border-radius: 18px;
+  background: white;
+  padding: 1.25rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+/* texto instrucional */
+.instruction-big {
+  font-size: 20px;
+  color: white;
+}
+
+/* botão grande roxo */
+.btn-purple {
+  background: linear-gradient(90deg, #6b00ff, #9a2cff);
+  color: white;
+  font-weight: 700;
+}
+
+/* botão grande verde usado para "Jogar" */
+.btn-green {
+  background: linear-gradient(90deg, #00c06b, #00a05a);
+  color: white;
+  font-weight: 700;
+}
+
+/* extras para PlayerCard interativo */
+.slide-image { border-radius: 18px; overflow: hidden; border: 6px solid rgba(255,255,255,0.04); }
+.reveal-card { background: #fff; border-radius: 18px; padding: 20px; box-shadow: 0 12px 30px rgba(2,6,23,0.6); }
+.role-icon { font-size: 44px; margin-bottom: 8px; }
+.secret-word { font-weight: 800; font-size: 20px; margin-top: 6px; }
+
+/* === extras para PlayerCard interativo (adicionar ao final de global.css) === */
+
+.slide-image {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 6px solid rgba(255,255,255,0.04);
+}
+
+.reveal-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 12px 30px rgba(2,6,23,0.6);
+}
+
+.role-icon { font-size: 44px; margin-bottom: 8px; }
+.secret-word { font-weight: 800; font-size: 20px; margin-top: 6px; }
+
+/* instrução e botões já possuem classes utilitárias, mas deixo estas para fallback */
+.instruction-text { font-size: 18px; line-height: 1.4; }
+.btn-purple { background: linear-gradient(90deg, #6b00ff, #9a2cff); color: #fff; font-weight: 700; border-radius: 999px; padding: 14px 18px; }
+.btn-green-large { background: linear-gradient(90deg, #00c06b, #00a05a); color: white; font-weight: 700; border-radius: 999px; padding: 14px 18px; }

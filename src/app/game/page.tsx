@@ -22,7 +22,7 @@ export default function GamePageClient() {
   const [assigned, setAssigned] = useState<Player[] | null>(null)
   const [index, setIndex] = useState(0)
 
-  // para controlar se o jogador atual já revelou
+  // controla se o jogador atual já revelou
   const [revealed, setRevealed] = useState(false)
 
   // fluxo de jogo
@@ -42,7 +42,7 @@ export default function GamePageClient() {
     if (typeof window === 'undefined') return
     const raw = localStorage.getItem('impostor_setup')
     if (!raw) {
-      router.push('/setup')
+      router.push('/')
       return
     }
 
@@ -57,7 +57,7 @@ export default function GamePageClient() {
 
       if (packWords.length === 0) {
         alert('Nenhuma palavra disponível nos packs selecionados.')
-        router.push('/setup')
+        router.push('/')
         return
       }
 
@@ -65,11 +65,10 @@ export default function GamePageClient() {
       setAssigned(result)
     } catch (err) {
       console.error('Erro ao ler setup do localStorage', err)
-      router.push('/setup')
+      router.push('/')
     }
   }, [router])
 
-  // Se ainda não carregou os players
   if (assigned === null) {
     return (
       <div className="w-full max-w-md bg-white rounded-2xl shadow p-6 text-center">
@@ -78,7 +77,6 @@ export default function GamePageClient() {
     )
   }
 
-  // Segurança: se index inválido, volta ao setup
   if (index < 0 || index >= assigned.length) {
     return (
       <div className="w-full max-w-md bg-white rounded-2xl shadow p-6 text-center">
@@ -86,16 +84,16 @@ export default function GamePageClient() {
         <div className="mt-4">
           <button
             className="px-4 py-2 bg-blue-600 text-white rounded"
-            onClick={() => router.push('/setup')}
+            onClick={() => router.push('/')}
           >
-            Voltar para setup
+            Voltar para início
           </button>
         </div>
       </div>
     )
   }
 
-  const current = assigned![index]
+  const current = assigned[index]
 
   // Handler chamado pelo PlayerCard quando o jogador revelar
   function handleRevealed() {
@@ -105,33 +103,28 @@ export default function GamePageClient() {
   // Avança para o próximo jogador (ler)
   function handleNextPlayer() {
     setRevealed(false)
-    if (index < assigned!.length - 1) {
+    if (index < assigned.length - 1) {
       setIndex(i => i + 1)
     } else {
-      // todos já leram; agora mostramos botão "Jogar" (phase permanece 'reading' até o click)
-      // mantenha index no último (para poder mostrar "Jogar")
+      // todos já leram; mantém index no último para poder mostrar "Jogar" depois
     }
+    // rola para top para garantir que o próximo jogador veja o topo
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // Inicia o jogo: escolhe jogador aleatório que começa e inicia mini-contador
+  // inicia o jogo: escolhe jogador aleatório que começa e inicia mini-contador
   function handleStartGame() {
-    // seleciona aleatoriamente um jogador para começar
-    const startIdx = Math.floor(Math.random() * assigned!.length)
+    const startIdx = Math.floor(Math.random() * assigned.length)
     setStartingPlayerIndex(startIdx)
-
-    // vai para fase de preparação (mostra "O jogador X começa")
     setPhase('prepare')
 
-    // aguarda 800ms antes de iniciar mini-contador para suavizar a animação
     setTimeout(() => {
       setPhase('mini-countdown')
       setMiniCount(3)
-      // iniciar decremento do miniCount
       const miniTimer = setInterval(() => {
         setMiniCount(c => {
           if (c <= 1) {
             clearInterval(miniTimer)
-            // quando o mini-contador terminar, inicia discussão
             startDiscussionTimer()
             return 0
           }
@@ -141,9 +134,7 @@ export default function GamePageClient() {
     }, 800)
   }
 
-  // inicia o timer principal (discussion)
   function startDiscussionTimer() {
-    // ler duração do setup
     const raw = localStorage.getItem('impostor_setup')
     let durationMin = 5
     if (raw) {
@@ -158,17 +149,14 @@ export default function GamePageClient() {
     setMainSeconds(totalSeconds)
     setPhase('discussion')
 
-    // limpa qualquer intervalo anterior
     if (mainIntervalRef.current) {
       window.clearInterval(mainIntervalRef.current)
       mainIntervalRef.current = null
     }
 
-    // inicia o intervalo
     mainIntervalRef.current = window.setInterval(() => {
       setMainSeconds(s => {
         if (s <= 1) {
-          // tempo acabou
           if (mainIntervalRef.current) {
             window.clearInterval(mainIntervalRef.current)
             mainIntervalRef.current = null
@@ -181,138 +169,100 @@ export default function GamePageClient() {
     }, 1000)
   }
 
-  // Parar o timer (quando votar)
   function handleStopAndVote() {
-  // para o intervalo principal, se estiver rodando
-  if (mainIntervalRef.current) {
-    window.clearInterval(mainIntervalRef.current)
-    mainIntervalRef.current = null
-  }
-
-  // opcional: salvar os players distribuídos (assigned) para uso futuro na votação/resultados
-  // assigned pode ser null, então verificamos
-  try {
-    if (assigned) {
-      localStorage.setItem('impostor_assigned', JSON.stringify(assigned))
+    if (mainIntervalRef.current) {
+      window.clearInterval(mainIntervalRef.current)
+      mainIntervalRef.current = null
     }
-  } catch (e) {
-    console.warn('Falha ao salvar assigned no localStorage', e)
+
+    try {
+      if (assigned) {
+        localStorage.setItem('impostor_assigned', JSON.stringify(assigned))
+      }
+    } catch (e) {
+      console.warn('Falha ao salvar assigned no localStorage', e)
+    }
+
+    setPhase('finished')
+    router.push('/vote')
   }
 
-  // muda de fase para finished (ou mantenha outra lógica se preferir)
-  setPhase('finished')
-
-  // redireciona para a tela de votação
-  router.push('/vote')
-  }
-
-  // Formata segundos para mm:ss
   function formatTime(sec: number) {
     const m = Math.floor(sec / 60).toString().padStart(2, '0')
     const s = Math.floor(sec % 60).toString().padStart(2, '0')
     return `${m}:${s}`
   }
 
+  // botão sair: ícone X no canto superior esquerdo (posição absoluta relativa ao main container)
+  function handleExit() {
+    localStorage.removeItem('impostor_setup')
+    router.push('/')
+  }
+
   return (
-    <div className="w-full max-w-md bg-white rounded-2xl shadow p-6 space-y-4">
-      {/* leitura dos jogadores */}
-      {phase === 'reading' && (
-        <>
-          <h3 className="text-lg font-semibold">{`Jogador ${index + 1}`}</h3>
+    <div className="min-h-screen w-full flex flex-col items-center justify-start px-4 py-10 relative">
+      {/* exit icon (X) - superior esquerda */}
+      <button
+        onClick={handleExit}
+        aria-label="Sair"
+        style={{
+          position: 'absolute',
+          top: 12,
+          left: 12,
+          width: 44,
+          height: 44,
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.04)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: 'none',
+          color: '#fff',
+          cursor: 'pointer',
+          zIndex: 120000
+        }}
+      >
+        <span style={{ fontSize: 18, lineHeight: 1 }}>✕</span>
+      </button>
 
-          {/* key força remount do PlayerCard para resetar o estado interno de reveal */}
-          <PlayerCard key={current.id} player={current} onReveal={handleRevealed} />
+      <div className="w-full max-w-md">
+        <h3 className="text-center text-2xl font-semibold mb-4">{`Jogador ${index + 1}`}</h3>
 
-          <div className="mt-4 flex justify-between items-center">
+        <PlayerCard key={current.id} player={current} onReveal={handleRevealed} />
+
+        <div className="mt-6 text-center">
+          {!revealed ? (
+            <div className="instruction-text text-white/90 text-lg font-medium">
+              Arraste seu cartão para revelar sua palavra. Não deixe que ninguém mais a veja.
+            </div>
+          ) : (
+            <div className="text-white text-lg font-semibold">Passe o dispositivo para o próximo jogador</div>
+          )}
+        </div>
+
+        <div className="mt-8">
+          {revealed ? (
             <button
-              className="text-sm text-gray-600"
-              onClick={() => {
-                localStorage.removeItem('impostor_setup')
-                router.push('/setup')
-              }}
+              onClick={handleNextPlayer}
+              className="w-full py-4 rounded-full btn-purple text-lg font-bold"
             >
-              Sair
+              Próximo Jogador
             </button>
-
-            {/* botão Próximo só aparece depois do reveal */}
-            {revealed && index < assigned!.length - 1 && (
-              <button
-                className="px-3 py-2 bg-blue-600 text-white rounded"
-                onClick={handleNextPlayer}
-              >
-                Próximo jogador
-              </button>
-            )}
-
-            {/* se for o último jogador e já revelou, mostra botão Jogar */}
-            {revealed && index === assigned!.length - 1 && (
-              <button
-                className="px-3 py-2 bg-green-600 text-white rounded"
-                onClick={handleStartGame}
-              >
-                Jogar
-              </button>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* fase de preparação: mostra quem começa e mini contador */}
-      {phase === 'prepare' && startingPlayerIndex !== null && (
-        <div className="text-center space-y-4">
-          <div className="text-xl font-bold">O jogador {startingPlayerIndex + 1} começa</div>
-          <div className="text-sm text-gray-500">Preparando…</div>
+          ) : null}
         </div>
-      )}
 
-      {/* mini-contador 3..2..1 */}
-      {phase === 'mini-countdown' && startingPlayerIndex !== null && (
-        <div className="text-center">
-          <div className="text-xl font-semibold mb-2">O jogador {startingPlayerIndex + 1} começa</div>
-          <div className="text-6xl font-bold">{miniCount > 0 ? miniCount : '🏁'}</div>
-        </div>
-      )}
-
-      {/* discussão */}
-      {phase === 'discussion' && (
-        <div className="space-y-4 text-center">
-          <div className="text-5xl">💬</div>
-          <div className="text-lg font-semibold">Discussão</div>
-          <div className="text-sm text-gray-600">Um a um, cada jogador fala uma palavra ou frase relacionada com a palavra secreta</div>
-
-          <div className="text-3xl font-mono mt-2">{formatTime(mainSeconds)}</div>
-
-          <div className="text-sm text-gray-600">Parem o tempo quando estiverem prontos para votar</div>
-
-          <div className="flex justify-center">
+        {/* Se for o último jogador e já estiver revelado, mostrar botão Jogar */}
+        {revealed && index === (assigned.length - 1) && (
+          <div className="mt-4">
             <button
-              className="px-4 py-2 bg-red-600 text-white rounded"
-              onClick={handleStopAndVote}
+              onClick={handleStartGame}
+              className="w-full py-4 rounded-full btn-green-large text-lg font-bold"
             >
-              Votar
+              Jogar
             </button>
           </div>
-        </div>
-      )}
-
-      {/* final */}
-      {phase === 'finished' && (
-        <div className="text-center space-y-3">
-          <div className="text-lg font-bold">Discussão encerrada</div>
-          <div className="text-sm text-gray-600">Agora prossigam para votar.</div>
-          <div>
-            <button
-              className="px-4 py-2 bg-blue-600 text-white rounded"
-              onClick={() => {
-                localStorage.removeItem('impostor_setup')
-                router.push('/')
-              }}
-            >
-              Voltar ao início
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
